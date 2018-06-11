@@ -7,7 +7,7 @@ using Octorian.STLSlicer.Test.Assets;
 
 namespace Octorian.STLSlicer.Test
 {
-    public class ModelEqualityTests
+    public class ModelTests
     {
         [Fact]
         public void SlicePoint_Equals_Works()
@@ -39,6 +39,13 @@ namespace Octorian.STLSlicer.Test
             // operators should work, too
             Assert.True(TestLines.l1a == TestLines.l1c);
             Assert.True(TestLines.l1a != TestLines.l2a);
+        }
+
+        [Fact]
+        // todo: WRITE THIS TEST
+        public void SliceLine_Normal_Calculates_Correctly()
+        {
+
         }
 
 

@@ -6,8 +6,53 @@ namespace Octorian.STLSlicer.SLA
 {
     public class SliceLine : IEquatable<SliceLine>
     {
+        private SlicePoint _normal;
         public List<SlicePoint> Points { get; set; } = new List<SlicePoint>();
-        public SlicePoint Normal { get; set; }
+
+        public SlicePoint Normal
+        {
+            get => _normal;
+            // not really setting it with the value, but using it to calculate based on the points
+            set => _normal = CalculateNormal(value);
+        }
+
+        public SlicePoint CalculateNormal(SlicePoint normal = null)
+        {
+            if (!Validate())
+                throw new InvalidOperationException("Can't calculate Normal without points set");
+
+            if (normal == null)
+                normal  = _normal;
+            if (normal == null)
+                throw new InvalidOperationException("Can't calculate Normal without a starting point");
+
+            // calculate normal slopes 
+            var dX = Points[0].Y - Points[1].Y;
+            var dY = Points[0].X - Points[1].X;
+            // determine normal direction
+            var xDir = normal.X >= 0 ? 1 : -1;
+            var yDir = normal.Y >= 0 ? 1 : -1;
+            // check for delta 0 in either direction
+            if (dX == 0 && dY == 0)
+                return new SlicePoint(0, 0);
+            if (dX == 0)
+                return new SlicePoint(0, yDir);
+            if (dY == 0)
+                return new SlicePoint(xDir, 0);
+
+            // if there aren't any zeroes, calculate the hypotenuse
+            var hypotenuse = (float) Math.Sqrt((dX*dX) + (dY*dY));
+            // use cross-multiplication and solve for x & y to find normal values where hypotenuse == 1
+            dX = Math.Abs(dX / hypotenuse) * xDir;
+            dY = Math.Abs(dY / hypotenuse) * yDir;
+            return new SlicePoint(dX, dY);
+        }
+
+        public bool Validate()
+        {
+            return Points != null && (Points.Count == 2);
+        }
+
 
         #region Equality Operators
         public static bool operator == (SliceLine l1, SliceLine l2)

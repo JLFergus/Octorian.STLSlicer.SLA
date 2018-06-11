@@ -11,7 +11,7 @@ namespace Octorian.STLSlicer.SLA.Utils
         #region Find Facets
         public static List<Facet> FindFacetsIntersectingZIndex(STLDocument stl, float z)
         {
-            return stl.Facets.Where(f => f.Vertices.Any(v => v.Z <= z) && f.Vertices.Any(v => v.Z >= z) && Math.Abs(f.Normal.Z) != 1 ).ToList();
+            return stl.Facets.Where(f => f.Vertices.Any(v => v.Z <= z) && f.Vertices.Any(v => v.Z >= z) && Math.Abs(f.Normal.Z) != 1).ToList();
         }
 
         public static List<Facet> FindFlatFacetsAtZIndex(STLDocument stl, float z)
@@ -33,31 +33,23 @@ namespace Octorian.STLSlicer.SLA.Utils
         {
             // This won't work for flat horizontal plane vertices, so throw if that's what we've got
             if (Math.Abs(facet.Normal.Z) == 1)
-                throw new Exception("Cannot fine lines for flat horizontal planes");
+                throw new Exception("Cannot create lines for flat horizontal planes");
             var verts = facet.Vertices;
-            var returnLine = new SliceLine { Normal = new SlicePoint { X = facet.Normal.X, Y = facet.Normal.Y } };
-            // If two vertices are ON the z-index, just return that line
-            if (verts[0].Z == z && verts[1].Z == z)
+            var returnLine = new SliceLine();
+            // If any vertices are ON the z-index, just return that line
+            returnLine.Points.AddRange(verts.Where(v => v.Z == z).Select(v => new SlicePoint(v.X, v.Y)));
+            // For uniformity, I'm representing a point as a "line" between two of the same point
+            // It's janky, I'll refactor later
+            if (returnLine.Points.Count == 1)
             {
-                returnLine.Points.Add(new SlicePoint { X = verts[0].X, Y = verts[0].Y });
-                returnLine.Points.Add(new SlicePoint { X = verts[1].X, Y = verts[1].Y });
+                returnLine.Points.Add(returnLine.Points[0]);
+            }
+            if (returnLine.Points.Count == 2)
+            {
+                returnLine.Normal = new SlicePoint(facet.Normal.X, facet.Normal.Y);
                 return returnLine;
             }
-            if (verts[2].Z == z && verts[1].Z == z)
-            {
-                returnLine.Points.Add(new SlicePoint { X = verts[2].X, Y = verts[2].Y });
-                returnLine.Points.Add(new SlicePoint { X = verts[1].X, Y = verts[1].Y });
-                return returnLine;
-            }
-            if (verts[2].Z == z && verts[0].Z == z)
-            {
-                returnLine.Points.Add(new SlicePoint { X = verts[2].X, Y = verts[2].Y });
-                returnLine.Points.Add(new SlicePoint { X = verts[0].X, Y = verts[0].Y });
-                return returnLine;
-            }
-
-            // find the two points
-            // check first combination: v[0]-v[1]
+            // If no vertices are ON the z-index, find the two points where they CROSS it
             if ((verts[0].Z - z) / (verts[1].Z - z) < 0)
                 returnLine.Points.Add(CalculateZIntercept(verts[0], verts[1], z));
             if ((verts[2].Z - z) / (verts[1].Z - z) < 0)
@@ -66,8 +58,12 @@ namespace Octorian.STLSlicer.SLA.Utils
             if (returnLine.Points.Count < 2)
                 returnLine.Points.Add(CalculateZIntercept(verts[0], verts[2], z));
 
-            return returnLine;
+            returnLine.Normal = new SlicePoint(facet.Normal.X, facet.Normal.Y);
 
+            if (!returnLine.Validate())
+                throw new InvalidOperationException("Invalid Point Data");
+
+            return returnLine;
         }
 
         public static SlicePoint CalculateZIntercept(Vertex v1, Vertex v2, float z)

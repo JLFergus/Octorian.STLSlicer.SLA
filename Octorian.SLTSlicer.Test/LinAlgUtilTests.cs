@@ -153,6 +153,7 @@ namespace Octorian.STLSlicer.Test
         }
 
         [Fact]
+        //todo: FINISH THIS TEST
         public void CreateLineFromFacetAtZIndex_CreatesAccurateLine()
         {
             var l1 = new SliceLine
@@ -161,7 +162,8 @@ namespace Octorian.STLSlicer.Test
                 {
                     new SlicePoint(2, 2),
                     new SlicePoint(-2, -2)
-                }
+                },
+                Normal = new SlicePoint(-1, 1)
             };
             var f1 = new Facet
             {
@@ -170,10 +172,11 @@ namespace Octorian.STLSlicer.Test
                     new Vertex { X = 0, Y = 0, Z = 0 },
                     new Vertex { X = 5, Y = 5, Z = 5 },
                     new Vertex { X = -5, Y = -5, Z = 5 }
-                }
+                },
+                Normal = new Normal { X = 1, Y = -1, Z = 0 }
             };
 
-
+            var fN = f1.Normal;
         }
         #endregion
     }
